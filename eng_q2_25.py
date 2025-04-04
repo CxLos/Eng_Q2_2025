@@ -33,6 +33,10 @@ df_oct = df[df['Month'] == 'January']
 df_nov = df[df['Month'] == 'February']
 df_dec = df[df['Month'] == 'March']
 
+df_jan = df[df['Month'] == 'January']
+df_feb = df[df['Month'] == 'February']
+df_mar = df[df['Month'] == 'March']
+
 # print(df.head(10))
 # print('Total Marketing Events: ', len(df))
 # print('Column Names: \n', df.columns)
@@ -83,46 +87,96 @@ total_engagements = len(df)
 
 # ------------------------ Engagement Hours DF ---------------------------- #
 
-# print(df['Activity Duration (minutes):'].unique())
+# print("Activity Duration Unique Before: \n", df['Activity Duration (minutes):'].unique().tolist())
+# print(df['Activity Duration (minutes):'])
+
+activity_unique = [120, 
+                   300, 
+                   180, 
+                   60,
+                   0,
+                   5,
+                   30, 
+                   15, 
+                   10, 
+                   90, 
+                   45, 
+                   '2400 minutes', 
+                   '1680 minutes( 28 hours) over 2 week period', 
+                   240, 
+                   1320, 
+                   360,
+                   '450 mins', 
+                   720, 
+                   105, 
+                   420, 
+                   210, 
+                   150, 
+                   280, 
+                   'Onboarding Activities (Jordan Calbert)', 
+                   '75 minutes',
+                   20, 
+                   16, 
+                   75]
+df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].astype(str)
 
 df['Activity Duration (minutes):'] = (
     df['Activity Duration (minutes):']
-    .str.lower()               # make all text lowercase
-    .str.strip()               # remove leading/trailing spaces
+    .str.strip()               # Remove leading/trailing spaces
     .replace({
         "6 hrs": 360,
         "5 hrs": 300,
         "nan": 0,
+        "2400 minutes": 2400,
+        "1680 minutes( 28 hours) over 2 week period": 1680,
+        "450 mins": 450,
+        "75 minutes": 75,
+        "Onboarding Activities (Jordan Calbert)": 0,
     })
 )
+
+# Handle cases where we have a number followed by "minutes" or "mins"
+# We'll match any number of digits followed by 'minutes' or 'mins', and replace them with the corresponding number
+# df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].str.replace(
+#     r'(\d+)\s*(minutes|mins)', r'\1', regex=True
+# )
+
+df['Activity Duration (minutes):'] = pd.to_numeric(df['Activity Duration (minutes):'], errors='coerce')
+
+# convert to float:
+# df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].astype(float)
 
 # fill missing values with 0:
 df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].fillna(0)
 
-df['Activity Duration (minutes):'] = pd.to_numeric(df['Activity Duration (minutes):'], errors='coerce')
-
-print(df['Activity Duration (minutes):'].unique())
+# print("Activity Duration Unique After: \n", df['Activity Duration (minutes):'].unique().tolist())
 
 df_oct = df[df['Month'] == 'January']
 df_nov = df[df['Month'] == 'February']
 df_dec = df[df['Month'] == 'March']
 
+# print(df_dec.iloc[0:15, 0:4])
+
 # Sum of 'Activity Duration (minutes):' dataframe converted to hours:
 engagement_hours = df['Activity Duration (minutes):'].sum()/60
 engagement_hours = round(engagement_hours)
-# print('Sum Engagement Hours:', engagement_hours)
+print('Sum Engagement Hours:', engagement_hours)
 
 # Engagement hours October:
+# print("Activity January Unique: \n", df_oct['Activity Duration (minutes):'].unique().tolist())
 engagement_hours_oct = df_oct['Activity Duration (minutes):'].sum()/60
 engagement_hours_oct = round(engagement_hours_oct)
+print('Engagement Hours January:', engagement_hours_oct)
 
 # Engagement hours November:
 engagement_hours_nov = df_nov['Activity Duration (minutes):'].sum()/60
 engagement_hours_nov = round(engagement_hours_nov)
+print('Engagement Hours February:', engagement_hours_nov)
 
 # Engagement hours December:
 engagement_hours_dec = df_dec['Activity Duration (minutes):'].sum()/60
 engagement_hours_dec = round(engagement_hours_dec)
+print('Engagement Hours March:', engagement_hours_dec)
 
 # Hours DF:
 df_hours_q1 = pd.DataFrame({
@@ -170,9 +224,53 @@ engagement_hours_fig = px.bar(
 
 # ------------------------ Total Travel Time DF ---------------------------- #
 
+# Unique values in 'Total travel time (minutes):' column:
+print("Travel Time Unique Before: \n", df['Total travel time (minutes):'].unique().tolist())
+
+travel_unique =  [
+    0, 
+    45,
+    60,
+    30,
+    300,
+    15,
+    90,
+    'End of Week 1 to 1 Performance Review',
+    240,
+    'nan',
+    'Sustainable Food Center + APH Health Education Strategy Meeting & Planning Activities',
+    480,
+    120,
+    'Community First Village Huddle',
+ ]
+
+# convert to string:
+df['Total travel time (minutes):'] = df['Total travel time (minutes):'].astype(str)
+
+# Replace values in 'Total travel time (minutes):' column:
+df['Total travel time (minutes):'] = (
+    df['Total travel time (minutes):']              # Keep the column as it is
+    .str.strip()                                    # Remove leading/trailing spaces
+    .replace({
+        "End of Week 1 to 1 Performance Review": 0,
+        "Sustainable Food Center + APH Health Education Strategy Meeting & Planning Activities": 0,
+        "Community First Village Huddle": 0,
+        "nan": 0,  # If "nan" is a string, convert to '0'
+    })
+)
+
+# Convert the column to numeric (will handle any remaining non-numeric values as NaN)
+df['Total travel time (minutes):'] = pd.to_numeric(df['Total travel time (minutes):'], errors='coerce')
+
+# Fill NaN values with 0 (or any other appropriate value)
+df['Total travel time (minutes):'] = df['Total travel time (minutes):'].fillna(0)
+
+print("Travel Time Unique After: \n", df['Total travel time (minutes):'].unique().tolist())
+
 # sum 'Total travel time (minutes):' dataframe:
 total_travel_time = df['Total travel time (minutes):'].sum()
 total_travel_time = round(total_travel_time)
+print("Total travel time:",total_travel_time)
 
 # --------------------------------- Activity Status DF -------------------------------- #
 
@@ -507,7 +605,7 @@ df_care = df[['Care Network Activity:', 'Date of Activity']].copy()
 df_care['Month'] = df_care['Date of Activity'].dt.month_name()
 
 # Filter for October, November, and December
-df_care_q4 = df_care[df_care['Month'].isin(['October', 'November', 'December'])]
+df_care_q4 = df_care[df_care['Month'].isin(['January', 'February', 'March'])]
 
 # Group the data by 'Month' and 'BMHC Administrative Activity:' and count occurrences
 df_care_counts = (
@@ -517,7 +615,7 @@ df_care_counts = (
 )
 
 # Define the desired month order
-month_order = ['October', 'November', 'December']
+month_order = ['January', 'February', 'March']
 
 # Assign categorical ordering to the 'Month' column
 df_care_counts['Month'] = pd.Categorical(
@@ -556,7 +654,8 @@ care_fig = px.bar(
     xaxis=dict(
         tickmode='array',
         tickvals=df_care_counts['Month'].unique(),
-        tickangle=-35  # Rotate x-axis labels for better readability
+        tickangle=-35,  # Rotate x-axis labels for better readability
+        showticklabels=False
     ),
     legend=dict(
         title='Activity',
@@ -601,9 +700,11 @@ care_totals_fig = px.bar(
         tickfont=dict(size=18),  # Adjust font size for the month labels
         tickangle=-25,  # Rotate x-axis labels for better readability
         title=dict(
-            text=None,
+            # text=None,
+            text="Month",
             font=dict(size=20),  # Font size for the title
         ),
+        showticklabels=False
     ),
     yaxis=dict(
         title=dict(
@@ -640,8 +741,10 @@ care_pie = px.pie(
         ),
     )  # Center-align the title
 ).update_traces(
-    textfont=dict(size=19),  # Increase text size in each bar
-    texttemplate='%{value}<br>%{percent:.1%}',  # Format percentage as whole numbers
+    # textinfo='none',
+    textinfo='percent',
+    # textfont=dict(size=19),  # Increase text size in each bar
+    # texttemplate='%{value}<br>%{percent:.1%}',  # Format percentage as whole numbers
     hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
 )
 
@@ -920,7 +1023,7 @@ html.Div(
             children=[
             html.Div(
                 className='high1',
-                children=['Total Engagements:']
+                children=['Total Q2 Engagements:']
             ),
             html.Div(
                 className='circle1',
@@ -944,7 +1047,7 @@ html.Div(
             children=[
             html.Div(
                 className='high2',
-                children=['Q1 Total Engagement Hours:']
+                children=['Total Q2 Engagement Hours:']
             ),
             html.Div(
                 className='circle2',
@@ -998,7 +1101,7 @@ html.Div(
             children=[
             html.Div(
                 className='high5',
-                children=['Total Travel Time:']
+                children=['Q2 Total Travel Time:']
             ),
             html.Div(
                 className='circle1',
