@@ -191,7 +191,7 @@ engagement_hours_fig = px.bar(
     y='Engagement Hours',
     color = 'Month',
     text='Engagement Hours',
-    title='Q1 Engagement Hours',
+    title='Q2 Engagement Hours',
     labels={
         'Engagement Hours': 'Engagement Hours',
         'Month': 'Month'
@@ -207,9 +207,14 @@ engagement_hours_fig = px.bar(
         color='black'
     ),
     xaxis=dict(
+        title=dict(
+            text=None,
+            # text="Month",
+            font=dict(size=20),  # Font size for the title
+        ),
         tickmode='array',
         tickvals=df_hours_q1['Month'].unique(),
-        tickangle=-35  # Rotate x-axis labels for better readability
+        tickangle=0  # Rotate x-axis labels for better readability
     ),
 ).update_traces(
     texttemplate='%{text}',  # Display the count value above bars
@@ -282,7 +287,7 @@ status_fig = px.pie(
     names='Activity Status:',
     values='Count',
 ).update_layout(
-    title='Q1 Engagements Activity Status:',
+    title='Q2 Activity Status:',
     title_x=0.5,
     height=500,
     font=dict(
@@ -329,7 +334,7 @@ df_person['Person submitting this form:'] = (
 df_person['Month'] = df_person['Date of Activity'].dt.month_name()
 
 # Filter for October, November, and December
-df_person_q4 = df_person[df_person['Month'].isin(['October', 'November', 'December'])]
+df_person_q4 = df_person[df_person['Month'].isin(['January', 'February', 'March'])]
 
 # Group the data by 'Month' and 'Person submitting this form:' and count occurrences
 df_person_counts = (
@@ -339,7 +344,7 @@ df_person_counts = (
 )
 
 # Define the desired month order
-month_order = ['October', 'November', 'December']
+month_order = ['January', 'February', 'March']
 
 # Assign categorical ordering to the 'Month' column
 df_person_counts['Month'] = pd.Categorical(
@@ -359,7 +364,7 @@ person_fig = px.bar(
     color='Person submitting this form:',
     barmode='group',
     text='Count',
-    title='Person Submitting This Form by Month',
+    title='Person Submitting This Form by Month Q2',
     labels={
         'Count': 'Number of Submissions',
         'Month': 'Month',
@@ -440,7 +445,7 @@ person_totals_fig = px.bar(
     height=850,  # Adjust graph height
     title=dict(
         x=0.5,
-        text='Total Q1 Form Submissions by Person',  # Title text
+        text='Q2 Form Submissions by Person',  # Title text
         font=dict(
             size=35,  # Increase this value to make the title bigger
             family='Calibri',  # Optional: specify font family
@@ -454,6 +459,7 @@ person_totals_fig = px.bar(
             text='',
             font=dict(size=20),  # Font size for the title
         ),
+        showticklabels=False 
     ),
     yaxis=dict(
         title=dict(
@@ -482,7 +488,7 @@ person_pie = px.pie(
 ).update_layout(
     title=dict(
         x=0.5,
-        text='Q1 Form Submissions by Person',  # Title text
+        text='Q2 Form Submissions by Person',  # Title text
         font=dict(
             size=35,  # Increase this value to make the title bigger
             family='Calibri',  # Optional: specify font family
@@ -535,7 +541,7 @@ admin_fig = px.bar(
     color='BMHC Administrative Activity:',
     barmode='group',
     text='Count',
-    title='BMHC Administrative Activity by Month',
+    title='BMHC Administrative Activity by Month Q2',
     labels={
         'Count': 'Number of Activities',
         'Month': 'Month',
@@ -635,7 +641,7 @@ care_fig = px.bar(
     color='Care Network Activity:',
     barmode='group',
     text='Count',
-    title='BMHC Care Network Activity by Month',
+    title='BMHC Care Network Activity by Month Q2',
     labels={
         'Count': 'Number of Activities',
         'Month': 'Month',
@@ -652,10 +658,15 @@ care_fig = px.bar(
         color='black'
     ),
     xaxis=dict(
+        title=dict(
+            text=None,
+            # text="Month",
+            font=dict(size=20),  # Font size for the title
+        ),
         tickmode='array',
         tickvals=df_care_counts['Month'].unique(),
-        tickangle=-35,  # Rotate x-axis labels for better readability
-        showticklabels=False
+        tickangle=0,  # Rotate x-axis labels for better readability
+        # showticklabels=False
     ),
     legend=dict(
         title='Activity',
@@ -689,7 +700,7 @@ care_totals_fig = px.bar(
     height=850,  # Adjust graph height
     title=dict(
         x=0.5,
-        text='Care Network Activities Q1 Totals',  # Title text
+        text='Care Network Activities Q2',  # Title text
         font=dict(
             size=35,  # Increase this value to make the title bigger
             family='Calibri',  # Optional: specify font family
@@ -733,7 +744,7 @@ care_pie = px.pie(
 ).update_layout(
     title=dict(
         x=0.5,
-        text='Q1 Care Network Activity',  # Title text
+        text='Q2 Care Network Activity',  # Title text
         font=dict(
             size=35,  # Increase this value to make the title bigger
             family='Calibri',  # Optional: specify font family
@@ -1023,7 +1034,7 @@ html.Div(
             children=[
             html.Div(
                 className='high1',
-                children=['Total Q2 Engagements:']
+                children=['Q2 Engagements:']
             ),
             html.Div(
                 className='circle1',
@@ -1047,7 +1058,7 @@ html.Div(
             children=[
             html.Div(
                 className='high2',
-                children=['Total Q2 Engagement Hours:']
+                children=['Q2 Engagement Hours:']
             ),
             html.Div(
                 className='circle2',
