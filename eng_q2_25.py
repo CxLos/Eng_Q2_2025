@@ -1,11 +1,19 @@
 # =================================== IMPORTS ================================= #
-#  
+
 import pandas as pd 
 import plotly.graph_objects as go
 import plotly.express as px
+from datetime import datetime, timedelta
 import os
 import dash
 from dash import dcc, html
+
+# Google Web Credentials
+import json
+import base64
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 # 'data/~$bmhc_data_2024_cleaned.xlsx'
 # print('System Version:', sys.version)
 # -------------------------------------- DATA ------------------------------------------- #
@@ -13,10 +21,40 @@ from dash import dcc, html
 current_dir = os.getcwd()
 current_file = os.path.basename(__file__)
 script_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = 'data/Engagement_Responses.xlsx'
-file_path = os.path.join(script_dir, data_path)
-data = pd.read_excel(file_path)
+# data_path = 'data/Engagement_Responses.xlsx'
+# file_path = os.path.join(script_dir, data_path)
+# data = pd.read_excel(file_path)
+# df = data.copy()
+
+# Define the Google Sheets URL
+sheet_url = "https://docs.google.com/spreadsheets/d/1D0oOioAfJyNCHhJhqFuhxxcx3GskP9L-CIL1DcOyhug/edit?resourcekey=&gid=1261604285#gid=1261604285"
+
+# Define the scope
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+# Load credentials
+encoded_key = os.getenv("GOOGLE_CREDENTIALS")
+
+if encoded_key:
+    json_key = json.loads(base64.b64decode(encoded_key).decode("utf-8"))
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
+else:
+    creds_path = r"C:\Users\CxLos\OneDrive\Documents\BMHC\Data\bmhc-timesheet-4808d1347240.json"
+    if os.path.exists(creds_path):
+        creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+    else:
+        raise FileNotFoundError("Service account JSON file not found and GOOGLE_CREDENTIALS is not set.")
+
+# Authorize and load the sheet
+client = gspread.authorize(creds)
+sheet = client.open_by_url(sheet_url)
+worksheet = sheet.get_worksheet(0)  # ✅ This grabs the first worksheet
+data = pd.DataFrame(worksheet.get_all_records())
+# data = pd.DataFrame(client.open_by_url(sheet_url).get_all_records())
 df = data.copy()
+
+# Get the reporting month:
+current_month = datetime(2025, 3, 1).strftime("%B")
 
 # Trim leading and trailing whitespaces from column names
 df.columns = df.columns.str.strip()
@@ -29,13 +67,9 @@ df['Date of Activity'] = pd.to_datetime(df['Date of Activity'], errors='coerce')
 df = df[(df['Date of Activity'].dt.month >= 1) & (df['Date of Activity'].dt.month <= 3)]
 df['Month'] = df['Date of Activity'].dt.month_name()
 
-df_oct = df[df['Month'] == 'January']
-df_nov = df[df['Month'] == 'February']
-df_dec = df[df['Month'] == 'March']
-
-df_jan = df[df['Month'] == 'January']
-df_feb = df[df['Month'] == 'February']
-df_mar = df[df['Month'] == 'March']
+df_1 = df[df['Month'] == 'January']
+df_2 = df[df['Month'] == 'February']
+df_3 = df[df['Month'] == 'March']
 
 # print(df.head(10))
 # print('Total Marketing Events: ', len(df))
@@ -79,9 +113,66 @@ df_mar = df[df['Month'] == 'March']
 # if duplicate_columns:
 #     print(f"Duplicate columns found: {duplicate_columns}")
 
+df.rename(
+    columns={
+        "Activity Duration (minutes):": "Minutes",
+        # "Person submitting this form:": "Person",
+        # "Total travel time (minutes):": "Travel Time",
+    }, 
+inplace=True)
+
+# Get the reporting quarter:
+def get_custom_quarter(date_obj):
+    month = date_obj.month
+    if month in [10, 11, 12]:
+        return "Q1"  # October–December
+    elif month in [1, 2, 3]:
+        return "Q2"  # January–March
+    elif month in [4, 5, 6]:
+        return "Q3"  # April–June
+    elif month in [7, 8, 9]:
+        return "Q4"  # July–September
+
+# Reporting Quarter (use last month of the quarter)
+report_date = datetime(2025, 3, 1)  # Example report date for Q2 (Jan–Mar)
+month = report_date.month
+report_year = report_date.year
+current_quarter = get_custom_quarter(report_date)
+# print(f"Reporting Quarter: {current_quarter}")
+
+# Adjust the quarter calculation for custom quarters
+if month in [10, 11, 12]:
+    quarter = 1  # Q1: October–December
+elif month in [1, 2, 3]:
+    quarter = 2  # Q2: January–March
+elif month in [4, 5, 6]:
+    quarter = 3  # Q3: April–June
+elif month in [7, 8, 9]:
+    quarter = 4  # Q4: July–September
+    
+        # Calculate start and end month indices for the quarter
+all_months = [
+    'January', 'February', 'March', 
+    'April', 'May', 'June',
+    'July', 'August', 'September', 
+    'October', 'November', 'December'
+]
+start_month_idx = (quarter - 1) * 3
+month_order = all_months[start_month_idx:start_month_idx + 3]
+
+# Define a mapping for months to their corresponding quarter
+quarter_months = {
+    1: ['October', 'November', 'December'],  # Q1
+    2: ['January', 'February', 'March'],    # Q2
+    3: ['April', 'May', 'June'],            # Q3
+    4: ['July', 'August', 'September']      # Q4
+}
+
+# Get the months for the current quarter
+months_in_quarter = quarter_months[quarter]
+
 # ------------------------ Total Engagements DF ---------------------------- #
 
-# Total number of engagements:
 total_engagements = len(df)
 # print('Total Engagements:', total_engagements)
 
@@ -118,11 +209,11 @@ activity_unique = [120,
                    20, 
                    16, 
                    75]
-df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].astype(str)
 
-df['Activity Duration (minutes):'] = (
-    df['Activity Duration (minutes):']
-    .str.strip()               # Remove leading/trailing spaces
+df['Minutes'] = (
+    df['Minutes']
+    .astype(str)
+    .str.strip()               
     .replace({
         "6 hrs": 360,
         "5 hrs": 300,
@@ -135,72 +226,45 @@ df['Activity Duration (minutes):'] = (
     })
 )
 
-# Handle cases where we have a number followed by "minutes" or "mins"
-# We'll match any number of digits followed by 'minutes' or 'mins', and replace them with the corresponding number
-# df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].str.replace(
-#     r'(\d+)\s*(minutes|mins)', r'\1', regex=True
-# )
-
-df['Activity Duration (minutes):'] = pd.to_numeric(df['Activity Duration (minutes):'], errors='coerce')
-
-# convert to float:
-# df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].astype(float)
-
-# fill missing values with 0:
-df['Activity Duration (minutes):'] = df['Activity Duration (minutes):'].fillna(0)
+df['Minutes'] = pd.to_numeric(df['Minutes'], errors='coerce')
+df['Minutes'] = df['Minutes'].fillna(0)
 
 # print("Activity Duration Unique After: \n", df['Activity Duration (minutes):'].unique().tolist())
 
-df_oct = df[df['Month'] == 'January']
-df_nov = df[df['Month'] == 'February']
-df_dec = df[df['Month'] == 'March']
+# Calculate total hours for each month in the current quarter
+hours = []
+for month in months_in_quarter:
+    hours_in_month = df[df['Month'] == month]['Minutes'].sum()/60
+    hours_in_month = round(hours_in_month)
+    hours.append(hours_in_month)
+    # print(f'Engagement hours in {month}:', hours_in_month, 'hours')
+    
+eng_hours = df.groupby('Minutes').size().reset_index(name='Count')
+eng_hours = df['Minutes'].sum()/60
+eng_hours = round(eng_hours)
 
-# print(df_dec.iloc[0:15, 0:4])
-
-# Sum of 'Activity Duration (minutes):' dataframe converted to hours:
-engagement_hours = df['Activity Duration (minutes):'].sum()/60
-engagement_hours = round(engagement_hours)
-print('Sum Engagement Hours:', engagement_hours)
-
-# Engagement hours October:
-# print("Activity January Unique: \n", df_oct['Activity Duration (minutes):'].unique().tolist())
-engagement_hours_oct = df_oct['Activity Duration (minutes):'].sum()/60
-engagement_hours_oct = round(engagement_hours_oct)
-print('Engagement Hours January:', engagement_hours_oct)
-
-# Engagement hours November:
-engagement_hours_nov = df_nov['Activity Duration (minutes):'].sum()/60
-engagement_hours_nov = round(engagement_hours_nov)
-print('Engagement Hours February:', engagement_hours_nov)
-
-# Engagement hours December:
-engagement_hours_dec = df_dec['Activity Duration (minutes):'].sum()/60
-engagement_hours_dec = round(engagement_hours_dec)
-print('Engagement Hours March:', engagement_hours_dec)
-
-# Hours DF:
-df_hours_q1 = pd.DataFrame({
-    'Month': ['October', 'November', 'December'],
-    'Engagement Hours': [engagement_hours_oct, engagement_hours_nov, engagement_hours_dec]
+df_hours = pd.DataFrame({
+    'Month': months_in_quarter,
+    'Hours': hours
 })
 
 # Engagment Hours Bar Chart:
-engagement_hours_fig = px.bar(
-    df_hours_q1,
+hours_fig = px.bar(
+    df_hours,
     x='Month',
-    y='Engagement Hours',
+    y='Hours',
     color = 'Month',
-    text='Engagement Hours',
-    title='Q2 Engagement Hours',
+    text='Hours',
+    title= f'{current_quarter} Engagement Hours by Month',
     labels={
-        'Engagement Hours': 'Engagement Hours',
+        'Hours': 'Hours',
         'Month': 'Month'
     }
 ).update_layout(
     title_x=0.5,
     xaxis_title='Month',
     yaxis_title='Engagement Hours',
-    height=900,  # Adjust graph height
+    height=600,  # Adjust graph height
     font=dict(
         family='Calibri',
         size=17,
@@ -213,7 +277,7 @@ engagement_hours_fig = px.bar(
             font=dict(size=20),  # Font size for the title
         ),
         tickmode='array',
-        tickvals=df_hours_q1['Month'].unique(),
+        tickvals=df_hours['Month'].unique(),
         tickangle=0  # Rotate x-axis labels for better readability
     ),
 ).update_traces(
@@ -226,11 +290,39 @@ engagement_hours_fig = px.bar(
     ),
 )
 
+hours_pie = px.pie(
+    df_hours,
+    names='Month',
+    values='Hours',
+    color='Month',
+    height=550
+).update_layout(
+    title=dict(
+        x=0.5,
+        text=f'{current_quarter} Ratio Engagement Hours by Month',  # Title text
+        font=dict(
+            size=35,  # Increase this value to make the title bigger
+            family='Calibri',  # Optional: specify font family
+            color='black'  # Optional: specify font color
+        ),
+    ),  # Center-align the title
+    margin=dict(
+        l=0,  # Left margin
+        r=0,  # Right margin
+        t=100,  # Top margin
+        b=0   # Bottom margin
+    )  # Add margins around the chart
+).update_traces(
+    rotation=180,  # Rotate pie chart 90 degrees counterclockwise
+    textfont=dict(size=19),  # Increase text size in each bar
+    textinfo='value+percent',
+    # texttemplate='<br>%{percent:.0%}',  # Format percentage as whole numbers
+    hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
+)
 
 # ------------------------ Total Travel Time DF ---------------------------- #
 
-# Unique values in 'Total travel time (minutes):' column:
-print("Travel Time Unique Before: \n", df['Total travel time (minutes):'].unique().tolist())
+# print("Travel Time Unique Before: \n", df['Total travel time (minutes):'].unique().tolist())
 
 travel_unique =  [
     0, 
@@ -249,33 +341,110 @@ travel_unique =  [
     'Community First Village Huddle',
  ]
 
-# convert to string:
-df['Total travel time (minutes):'] = df['Total travel time (minutes):'].astype(str)
-
-# Replace values in 'Total travel time (minutes):' column:
 df['Total travel time (minutes):'] = (
-    df['Total travel time (minutes):']              # Keep the column as it is
-    .str.strip()                                    # Remove leading/trailing spaces
+    df['Total travel time (minutes):']
+    .astype(str)             
+    .str.strip()                                    
     .replace({
         "End of Week 1 to 1 Performance Review": 0,
         "Sustainable Food Center + APH Health Education Strategy Meeting & Planning Activities": 0,
         "Community First Village Huddle": 0,
-        "nan": 0,  # If "nan" is a string, convert to '0'
+        "nan": 0,  
     })
 )
 
-# Convert the column to numeric (will handle any remaining non-numeric values as NaN)
 df['Total travel time (minutes):'] = pd.to_numeric(df['Total travel time (minutes):'], errors='coerce')
-
-# Fill NaN values with 0 (or any other appropriate value)
 df['Total travel time (minutes):'] = df['Total travel time (minutes):'].fillna(0)
 
-print("Travel Time Unique After: \n", df['Total travel time (minutes):'].unique().tolist())
+# print("Travel Time Unique After: \n", df['Total travel time (minutes):'].unique().tolist())
 
-# sum 'Total travel time (minutes):' dataframe:
 total_travel_time = df['Total travel time (minutes):'].sum()
 total_travel_time = round(total_travel_time)
-print("Total travel time:",total_travel_time)
+# print("Total travel time:",total_travel_time)
+
+# Calculate total hours for each month in the current quarter
+hours = []
+for month in months_in_quarter:
+    hours_in_month = df[df['Month'] == month]['Minutes'].sum()/60
+    hours_in_month = round(hours_in_month)
+    hours.append(hours_in_month)
+    # print(f'Engagement hours in {month}:', hours_in_month, 'hours')
+
+df_travel = pd.DataFrame({
+    'Month': months_in_quarter,
+    'Hours': hours
+})
+
+hours_fig = px.bar(
+    df_hours,
+    x='Month',
+    y='Hours',
+    color = 'Month',
+    text='Hours',
+    title= f'{current_quarter} Engagement Hours by Month',
+    labels={
+        'Hours': 'Hours',
+        'Month': 'Month'
+    }
+).update_layout(
+    title_x=0.5,
+    xaxis_title='Month',
+    yaxis_title='Engagement Hours',
+    height=600,  # Adjust graph height
+    font=dict(
+        family='Calibri',
+        size=17,
+        color='black'
+    ),
+    xaxis=dict(
+        title=dict(
+            text=None,
+            # text="Month",
+            font=dict(size=20),  # Font size for the title
+        ),
+        tickmode='array',
+        tickvals=df_hours['Month'].unique(),
+        tickangle=0  # Rotate x-axis labels for better readability
+    ),
+).update_traces(
+    texttemplate='%{text}',  # Display the count value above bars
+    textfont=dict(size=20),  # Increase text size in each bar
+    textposition='auto',  # Automatically position text above bars
+    textangle=0, # Ensure text labels are horizontal
+    hovertemplate=(  # Custom hover template
+        '<b>Name</b>: %{label}<br><b>Count</b>: %{y}<extra></extra>'  
+    ),
+)
+
+hours_pie = px.pie(
+    df_hours,
+    names='Month',
+    values='Hours',
+    color='Month',
+    height=550
+).update_layout(
+    title=dict(
+        x=0.5,
+        text=f'{current_quarter} Ratio Engagement Hours by Month',  # Title text
+        font=dict(
+            size=35,  # Increase this value to make the title bigger
+            family='Calibri',  # Optional: specify font family
+            color='black'  # Optional: specify font color
+        ),
+    ),  # Center-align the title
+    margin=dict(
+        l=0,  # Left margin
+        r=0,  # Right margin
+        t=100,  # Top margin
+        b=0   # Bottom margin
+    )  # Add margins around the chart
+).update_traces(
+    rotation=180,  # Rotate pie chart 90 degrees counterclockwise
+    textfont=dict(size=19),  # Increase text size in each bar
+    textinfo='value+percent',
+    # texttemplate='<br>%{percent:.0%}',  # Format percentage as whole numbers
+    hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
+)
 
 # --------------------------------- Activity Status DF -------------------------------- #
 
@@ -287,7 +456,7 @@ status_fig = px.pie(
     names='Activity Status:',
     values='Count',
 ).update_layout(
-    title='Q2 Activity Status:',
+    title= f'{current_quarter} Activity Status',
     title_x=0.5,
     height=500,
     font=dict(
@@ -304,41 +473,42 @@ status_fig = px.pie(
 
 # ------------------------ Person Submitting Form DF ---------------------------- #
 
-#  Duplicate values in 'Person submitting this form:' column:
+person_unique = [
+    'Larry Wallace Jr.', 
+    'Cameron Morgan',
+    'Sonya Hosey', 
+    'Kiounis Williams', 
+    'Antonio Montgomery', 
+    'Toya Craney', 
+    'KAZI 88.7 FM Radio Interview & Preparation', 
+    'Kim Holiday', 
+    'Jordan Calbert', 
+    'Dominique Street', 
+    'Eric Roberts'
+]
 
-# 0           Antonio Montggery       1
-# 1           Antonio Montgomery      1
-# 2              Cameron Morgan       1
-# 3             Kiounis Williams      6
-# 4            Kiounis Williams       3
-# 5             Larry Wallace Jr     31
+# print("Person Unique Before:", df["Person submitting this form:"].unique().tolist())
 
 # Create a new dataframe with 'Person submitting this form:' and 'Date of Activity'
 df_person = df[['Person submitting this form:', 'Date of Activity']].copy()
 
-# Dictionary for replacements
-replacements = {
-    "Larry Wallace Jr": "Larry Wallace Jr.",
-    "`Larry Wallace Jr": "Larry Wallace Jr.",
-    "Antonio Montggery": "Antonio Montgomery"
-}
-
 # Remove trailing whitespaces and perform the replacements
-df_person['Person submitting this form:'] = (
-    df_person['Person submitting this form:']
+df['Person submitting this form:'] = (
+    df['Person submitting this form:']
     .str.strip()
-    .replace(replacements)
+    .replace({
+        "Larry Wallace Jr": "Larry Wallace Jr.",
+        "`Larry Wallace Jr": "Larry Wallace Jr.",
+        "Antonio Montggery": "Antonio Montgomery",
+        "KAZI 88.7 FM Radio Interview & Preparation": "Larry Wallace Jr.",
+    })
 )
 
-# Extract month from 'Date of activity:' column (assuming the column exists)
-df_person['Month'] = df_person['Date of Activity'].dt.month_name()
-
-# Filter for October, November, and December
-df_person_q4 = df_person[df_person['Month'].isin(['January', 'February', 'March'])]
+# print("Person Unique Before:", df["Person submitting this form:"].unique().tolist())
 
 # Group the data by 'Month' and 'Person submitting this form:' and count occurrences
 df_person_counts = (
-    df_person_q4.groupby(['Month', 'Person submitting this form:'], sort=True)
+    df.groupby(['Month', 'Person submitting this form:'], sort=True)
     .size()
     .reset_index(name='Count')
 )
@@ -349,7 +519,7 @@ month_order = ['January', 'February', 'March']
 # Assign categorical ordering to the 'Month' column
 df_person_counts['Month'] = pd.Categorical(
     df_person_counts['Month'],
-    categories=month_order,
+    categories=months_in_quarter,
     ordered=True
 )
 
@@ -364,7 +534,7 @@ person_fig = px.bar(
     color='Person submitting this form:',
     barmode='group',
     text='Count',
-    title='Person Submitting This Form by Month Q2',
+    title= f'{current_quarter} Person Submitting This Form by Month',
     labels={
         'Count': 'Number of Submissions',
         'Month': 'Month',
@@ -481,14 +651,14 @@ person_totals_fig = px.bar(
 #  Pie chart:
 person_pie = px.pie(
     df_pf,
-    names='Person submitting this form:',
+    names= 'Person submitting this form:',
     values='Count',
     color='Person submitting this form:',
     height=800
 ).update_layout(
     title=dict(
         x=0.5,
-        text='Q2 Form Submissions by Person',  # Title text
+        text= f'{current_quarter} Person Submitting Form by Month',  # Title text
         font=dict(
             size=35,  # Increase this value to make the title bigger
             family='Calibri',  # Optional: specify font family
@@ -985,7 +1155,7 @@ app.layout = html.Div(
         className='divv', 
         children=[ 
           html.H1(
-              'BMHC Partner Engagement Report Q2 2025', 
+              f'BMHC Partner Engagement Report {current_quarter} 2025', 
               className='title'),
           html.H2( 
               '01/01/2025 - 3/31/2024', 
@@ -995,7 +1165,7 @@ app.layout = html.Div(
               children=[
                   html.A(
                     'Repo',
-                    href='https://github.com/CxLos/Eng_Q2_2025',
+                    href= f'https://github.com/CxLos/Eng_{current_quarter}_2025',
                     className='btn'),
     ]),
   ]),    
@@ -1034,7 +1204,7 @@ html.Div(
             children=[
             html.Div(
                 className='high1',
-                children=['Q2 Engagements:']
+                children=[f'{current_quarter} Engagements']
             ),
             html.Div(
                 className='circle1',
@@ -1058,7 +1228,7 @@ html.Div(
             children=[
             html.Div(
                 className='high2',
-                children=['Q2 Engagement Hours:']
+                children=[f'{current_quarter} Engagement Hours']
             ),
             html.Div(
                 className='circle2',
@@ -1068,7 +1238,7 @@ html.Div(
                         children=[
                             html.H1(
                             className='high4',
-                            children=[engagement_hours]
+                            children=[eng_hours]
                     ),
                         ]
                     )
@@ -1080,18 +1250,58 @@ html.Div(
     ]
 ),
 
-
+# ROW 1
 html.Div(
-    className='row3',
+    className='row0',
     children=[
         html.Div(
-            className='graph0',
+            className='graph11',
             children=[
-                dcc.Graph(
-                    figure=engagement_hours_fig
-                )
+            html.Div(
+                className='high1',
+                children=[f'{current_quarter} Travel Hours']
+            ),
+            html.Div(
+                className='circle1',
+                children=[
+                    html.Div(
+                        className='hilite',
+                        children=[
+                            html.H1(
+                            className='high3',
+                            children=[total_travel_time]
+                    ),
+                        ]
+                    )
+ 
+                ],
+            ),
             ]
-        )
+        ),
+        html.Div(
+            className='graph22',
+            children=[
+            html.Div(
+                className='high2',
+                children=[f'{current_quarter} Placeholder']
+            ),
+            html.Div(
+                className='circle2',
+                children=[
+                    html.Div(
+                        className='hilite',
+                        children=[
+                            html.H1(
+                            className='high4',
+                            children=[]
+                    ),
+                        ]
+                    )
+ 
+                ],
+            ),
+            ]
+        ),
     ]
 ),
 
@@ -1108,27 +1318,34 @@ html.Div(
             ]
         ),
         html.Div(
-            className='graph44',
+            className='graph2',
             children=[
-            html.Div(
-                className='high5',
-                children=['Q2 Total Travel Time:']
-            ),
-            html.Div(
-                className='circle1',
-                children=[
-                    html.Div(
-                        className='hilite',
-                        children=[
-                            html.H1(
-                            className='high6',
-                            children=[total_travel_time]
-                    ),
-                        ]
-                    )
- 
-                ],
-            ),
+                dcc.Graph(
+                    # figure=status_fig
+                )
+            ]
+        ),
+    ]
+),
+
+# ROW 1
+html.Div(
+    className='row1',
+    children=[
+        html.Div(
+            className='graph1',
+            children=[
+                dcc.Graph(
+                    figure=hours_fig
+                )
+            ]
+        ),
+        html.Div(
+            className='graph2',
+            children=[
+                dcc.Graph(
+                    figure=hours_pie
+                )
             ]
         ),
     ]
@@ -1149,20 +1366,6 @@ html.Div(
     ]
 ),
 
-# ROW 
-html.Div(
-    className='row3',
-    children=[
-        html.Div(
-            className='graph0',
-            children=[
-                dcc.Graph(
-                    figure=person_totals_fig
-                )
-            ]
-        )
-    ]
-),
 # ROW 
 html.Div(
     className='row3',
