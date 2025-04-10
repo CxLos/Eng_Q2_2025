@@ -152,16 +152,6 @@ elif month in [4, 5, 6]:
     quarter = 3  # Q3: April–June
 elif month in [7, 8, 9]:
     quarter = 4  # Q4: July–September
-    
-        # Calculate start and end month indices for the quarter
-all_months = [
-    'January', 'February', 'March', 
-    'April', 'May', 'June',
-    'July', 'August', 'September', 
-    'October', 'November', 'December'
-]
-start_month_idx = (quarter - 1) * 3
-month_order = all_months[start_month_idx:start_month_idx + 3]
 
 # Define a mapping for months to their corresponding quarter
 quarter_months = {
@@ -173,6 +163,16 @@ quarter_months = {
 
 # Get the months for the current quarter
 months_in_quarter = quarter_months[quarter]
+
+# Calculate start and end month indices for the quarter
+# all_months = [
+#     'January', 'February', 'March', 
+#     'April', 'May', 'June',
+#     'July', 'August', 'September', 
+#     'October', 'November', 'December'
+# ]
+# start_month_idx = (quarter - 1) * 3
+# month_order = all_months[start_month_idx:start_month_idx + 3]
 
 # ------------------------ Total Engagements DF ---------------------------- #
 
@@ -524,9 +524,6 @@ df_person_counts = (
     .size()
     .reset_index(name='Count')
 )
-
-# Define the desired month order
-# month_order = ['January', 'February', 'March']
 
 # Assign categorical ordering to the 'Month' column
 df_person_counts['Month'] = pd.Categorical(
@@ -1785,7 +1782,8 @@ html.Div(
 print(f"Serving Flask app '{current_file}'! 🚀")
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=
+                   True)
                 #    False)
 # =================================== Updated Database ================================= #
 
