@@ -637,7 +637,7 @@ person_pie = px.pie(
         yanchor="top"  # Anchor legend at the top
     ),
 ).update_traces(
-    rotation=90,  # Rotate pie chart 90 degrees counterclockwise
+    rotation=70,  # Rotate pie chart 90 degrees counterclockwise
     textfont=dict(size=19),  # Increase text size in each bar
     texttemplate='%{value}<br>%{percent:.1%}',  # Format percentage as whole numbers
     hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
