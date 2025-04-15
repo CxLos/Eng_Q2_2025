@@ -16,6 +16,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 # 'data/~$bmhc_data_2024_cleaned.xlsx'
 # print('System Version:', sys.version)
+
+# ------ Pandas Display Options ------ #
+pd.set_option('display.max_rows', None)  # Show all rows
+pd.set_option('display.max_columns', None)  # Show all columns (if needed)
+pd.set_option('display.width', 1000)  # Adjust the width to prevent line wrapping
 # -------------------------------------- DATA ------------------------------------------- #
 
 current_dir = os.getcwd()
@@ -333,7 +338,7 @@ hours_pie = px.pie(
 
 # ------------------------ Total Travel Time DF ---------------------------- #
 
-# print("Travel Time Unique Before: \n", df['Total travel time (minutes):'].unique().tolist())
+# print("Travel Time Unique Before: \n", df['Travel Time'].unique().tolist())
 
 travel_unique =  [
     0, 
@@ -459,7 +464,6 @@ travel_pie = px.pie(
     hovertemplate='<b>%{label}</b>: %{value} hours<extra></extra>'
 )
 
-
 # --------------------------------- Activity Status DF -------------------------------- #
 
 # Group by 'Activity Status:' dataframe
@@ -485,163 +489,10 @@ status_fig = px.pie(
     hovertemplate='<b>Status</b>: %{label}<br><b>Count</b>: %{value}<extra></extra>'
 )
 
-# ------------------------ Person Submitting Form DF ---------------------------- #
-
-person_unique = [
-    'Larry Wallace Jr.', 
-    'Cameron Morgan',
-    'Sonya Hosey', 
-    'Kiounis Williams', 
-    'Antonio Montgomery', 
-    'Toya Craney', 
-    'KAZI 88.7 FM Radio Interview & Preparation', 
-    'Kim Holiday', 
-    'Jordan Calbert', 
-    'Dominique Street', 
-    'Eric Roberts'
-]
-
-# print("Person Unique Before:", df["Person submitting this form:"].unique().tolist())
-
-# Create a new dataframe with 'Person' and 'Date of Activity'
-df_person = df[['Person', 'Date of Activity']].copy()
-
-# Remove trailing whitespaces and perform the replacements
-df['Person'] = (
-    df['Person']
-    .str.strip()
-    .replace({
-        "Larry Wallace Jr": "Larry Wallace Jr.",
-        "`Larry Wallace Jr": "Larry Wallace Jr.",
-        "Antonio Montggery": "Antonio Montgomery",
-        "KAZI 88.7 FM Radio Interview & Preparation": "Larry Wallace Jr.",
-    })
-)
-
-# Group the data by 'Month' and 'Person' and count occurrences
-df_person_counts = (
-    df.groupby(['Month', 'Person'], sort=True)
-    .size()
-    .reset_index(name='Count')
-)
-
-# Assign categorical ordering to the 'Month' column
-df_person_counts['Month'] = pd.Categorical(
-    df_person_counts['Month'],
-    categories=months_in_quarter,
-    ordered=True
-)
-
-# Sort df
-df_person_counts = df_person_counts.sort_values(by=['Month', 'Person'])
-
-# Create the grouped bar chart
-person_fig = px.bar(
-    df_person_counts,
-    x='Month',
-    y='Count',
-    color='Person',
-    barmode='group',
-    text='Count',
-    title=f'{current_quarter} Form Submissions by Month',
-    labels={
-        'Count': 'Number of Submissions',
-        'Month': 'Month',
-        'Person': 'Person'
-    }
-).update_layout(
-    title_x=0.5,
-    xaxis_title='Month',
-    yaxis_title='Count',
-    height=900,  # Adjust graph height
-    title=dict(
-        text= f'{current_quarter} Form Submissions by Month',
-        x=0.5, 
-        font=dict(
-            size=35,
-            family='Calibri',
-            color='black',
-            )
-    ),
-    font=dict(
-        family='Calibri',
-        size=17,
-        color='black'
-    ),
-    xaxis=dict(
-        tickmode='array',
-        tickvals=df_person_counts['Month'].unique(),
-        tickangle=-35  # Rotate x-axis labels for better readability
-    ),
-    legend=dict(
-        title='',
-        orientation="v",  # Vertical legend
-        x=1.05,  # Position legend to the right
-        xanchor="left",  # Anchor legend to the left
-        y=1,  # Position legend at the top
-        yanchor="top"  # Anchor legend at the top
-    ),
-    hovermode='x unified',  # Display unified hover info
-    bargap=0.08,  # Reduce the space between bars
-    bargroupgap=0,  # Reduce space between individual bars in groups
-).update_traces(
-    textposition='outside',  # Display text above bars
-    textfont=dict(size=30),  # Increase text size in each bar
-    hovertemplate=(
-        '<br>'
-        '<b>Count: </b>%{y}<br>'  # Count
-    ),
-    customdata=df_person_counts['Person'].values.tolist()
-).add_vline(
-    x=0.5,  # Adjust the position of the line
-    line_dash="dash",
-    line_color="gray",
-    line_width=2
-).add_vline(
-    x=1.5,  # Position of the second line
-    line_dash="dash",
-    line_color="gray",
-    line_width=2
-)
-
-# Group by person submitting form:
-df_pf = df.groupby('Person').size().reset_index(name='Count')
-
-# Pie chart:
-person_pie = px.pie(
-    df_pf,
-    names='Person',
-    values='Count',
-    color='Person',
-    height=850
-).update_layout(
-    title=dict(
-        x=0.5,
-        text=f'{current_quarter} Distribution of Form Submissions',  # Title text
-        font=dict(
-            size=35,  # Increase this value to make the title bigger
-            family='Calibri',  # Optional: specify font family
-            color='black'  # Optional: specify font color
-        ),
-    ),
-    legend=dict(
-        # title='',
-        title=None,
-        orientation="v",  # Vertical legend
-        x=1.05,  # Position legend to the right
-        xanchor="left",  # Anchor legend to the left
-        y=1,  # Position legend at the top
-        yanchor="top"  # Anchor legend at the top
-    ),
-).update_traces(
-    rotation=70,  # Rotate pie chart 90 degrees counterclockwise
-    textfont=dict(size=19),  # Increase text size in each bar
-    texttemplate='%{value}<br>%{percent:.1%}',  # Format percentage as whole numbers
-    hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
-)
-
-
 # --------------------- BMHC Administrative Activity DF ------------------------ # 
+
+# print("Administrative Activity Unique Before:", df['Admin Activity'].unique().tolist())
+# print("Admin Activity value counts:", df['Admin Activity'].value_counts())
 
 admin_unique = [
     '', 'Communication & Correspondence', '(4) Outreach 1 to 1 Strategy Meetings', 'Outreach Team Meeting', "St. David's + Kazi 88.7FM Strategic Partnership Meeting & Strategy Planning Discussion/Activities", 'Travis County Judge Andy Brown & Travis County Commissioner Ann Howard BMHC Tour & Discussion', 'Key Leaders Huddle', '2025 Calendar Year Outreach Preparation & Strategic Planning Activities', 'BMHC Quarterly Team Meeting', 'Events Planning Meeting', 'Gudlife 2025 Strategic Planning Session', 'Community First Village Huddle', 'Community First Village Onsite Outreach', 'Record Keeping & Documentation', "Men's Mental Health 1st Saturdays", 'Financial & Budgetary Management', 'Office Management', 'Meeting With Frost Bank', 'HR Support', 'Compliance & Policy Enforcement', 'BMHC Team', 'Special Events Team Meeting', 'Weekly team meeting', 'National Kidney Foundation Strategy Meeting (Know Your Numbers Campaign Program)', 'Healthy Cuts/Know Your Numbers Event at Community First Village', 'IT', 'Meeting with Cameron', 'Implementation Studios Planning & Strategy Meeting', 'Outreach & Navigation Leads 1 to 1 Strategy Meeting', 'BMHC + Community First Village Onsite Outreach Strategy Planning Huddle', 'BMHC + Gudlife Strategy Huddle', 'BMHC + Community First Village Onsite Outreach Strategy Huddle', 'Downtown Austin Community Court Onsite Outreach', 'Outreach Onboarding (Jordan Calbert)', 'BMHC + Gudlife Outreach Strategy Huddle', 'End of Week 1 to 1 Performance Review', 'BMHC + KAZI Basketball Tournament', 'BMHC Gudlife Meeting', 'BMHC Pflugerville Asset Mapping Activities', '100 Black Men of Austin Quarterly Partnership Review (QPR)', 'Onboarding', 'Outreach 1 to 1 Strategy Meetings', 'Impact Forms Follow Up Meeting', 'Community First Village Outreach Strategy Huddle', 'Any Baby Can Tour & Partnership Meeting', 'Housing Authority of Travis County (Self-Care Day) Outreach Event', 'psh support call with Dr Wallace', 'BMHC Tour (Austin Mayor Kirk Watson & Austin City Council Member District 4 "Chito" Vela)', 'PSH Audit for ECHO', 'BMHC + Community First Village Neighborhood Care Team Planning Meeting', 'Biweekly PSH staffing with ECHO', 'PSH file updates and case staffing', 'Child Inc Travis County HeadStart Program (Fatherhood Program Event)', 'BMHC + Breakthrough of Central Texas Partnership Discussion', 'Housing Authority of Travis County Quarterly Partnership Review (QPR)', 'PSH', 'Meeting', 'Training', 'BMHC & GUD LFE Huddle Meeting', 'BMHC Internal & External Emails and Phone Calls Performed', 'Manor 5K Planning Meeting & Follow Up Activities', 'HSO stakeholder meeting', 'outreach coordination meeting', 'Outreach & Navigation Team Leads Huddle', 'Implementation Studios Planning Meeting', 'homeless advocacy meeting', 'Central Health Virtual Lunch', 'Community First Village Onsite Outreach & Healthy Cuts Preventative Screenings', 'MOU conversation with Extended Stay America', 'PSH iPilot', 'End of Week Outreach Performance Reviews', 'Outreach Onboarding Activities (Jordan Calbert)', 'BMHC Gudlife Huddle', 'BMHC & GUD LIFE Weekly Huddle', 'Bi-Partner Neighbor Partner Engagement Meeting', 'BOLO list and placement', 'In-Person Key Leaders Huddle', 'weekly HMIS updates and phone calls for clients on BOLO list', 'HMIS monthly reports submission to ECHO', 'timesheet completion and submit to Dr. Wallace', 'client referrals/community partnership'
@@ -666,9 +517,9 @@ admin_categories = [
 
 df['Admin Activity'] = (
     df['Admin Activity']
-    .astype(str)
-    .str.strip()
-    .replace({
+        .astype(str)
+        .str.strip()
+        .replace({
         
         "" : pd.NA,
         
@@ -872,6 +723,7 @@ admin_fig = px.bar(
         y=1,  # Position legend at the top
         yanchor="top"  # Anchor legend at the top
     ),
+    margin=dict(l=0, r=0, t=0, b=0),
     hovermode='x unified'  # Display unified hover info
 ).update_traces(
     textposition='outside',  # Display text above bars
@@ -902,7 +754,7 @@ admin_pie = px.pie(
             family='Calibri',  # Optional: specify font family
             color='black'  # Optional: specify font color
         ),
-    ),  # Center-align the title
+    ),  
     margin=dict(
         t=150,  # Adjust the top margin (increase to add more padding)
         l=20,   # Optional: left margin
@@ -918,6 +770,9 @@ admin_pie = px.pie(
 )
 
 # --------------------- Care Network Activity DF ------------------------ #
+
+# print(df['Care Network Activity'].unique().tolist())
+# print("Care Network Activity Value Counts:", df['Care Activity'].value_counts())
 
 custom_colors = {
     'January': 'Blues',
@@ -1165,6 +1020,9 @@ care_pie = px.pie(
 
 # --------------------- Community Outreach Activity DF ------------------------ #
 
+# print("Community Outreach Activities Unique Before:", df['Outreach Activity'].unique().tolist())
+# print("Community Outreach Activities Value Counts: \n", df['Outreach Activity'].value_counts())
+
 comm_unique = [
     '', 'Meeting', 'Advocacy', 'Healthy Cuts Event', 'Presentation', 'Onsite Outreach ', 'Movement is medicine', 'Weekly Meeting Updates', 'NA', 'NA - Team Meeting', 'Movement is Medicine', ' Movement is Medicine', 'Potential partnering for mammogram services on site.', 'Healthy Cuts/Know Your Numbers Event at Community First Village', 'CTAAF Conference Presentation (advocacy of BMHC + AMEN movement is medicine ) ', 'BMHC Weekly Team Huddle ', 'Outreach 1 to 1 Strategy Meetings', 'Community First Village Onsite Outreach', 'Movement Is Medicine', 'Downtown Austin Community Court Onsite Outreach', 'Tabling', 'BMHC + KAZI Basketball Tournament', 'Outreach & Navigation', 'Health Event', 'ECHO Pilot Program ', 'Advocacy, Tabling, Presentation', 'Coordination of services', 'Collaboration', 'PSH Caseworker calls and updates', 'PSH HMIS Updates', 'PSH File updates', 'Collaboration of development of co-programs (ministry and GUD LIFE)', 'Discovery Meeting: Learn about each organization’s mission, values, and potential alignment.', 'psh updates', 'build relationship ', 'Building Relationships ', 'meeting via phone'
 ]
@@ -1348,7 +1206,7 @@ comm_pie = px.pie(
         ),
     ),  # Center-align the title
     margin=dict(
-        t=150,  # Adjust the top margin (increase to add more padding)
+        t=250,  # Adjust the top margin (increase to add more padding)
         l=20,   # Optional: left margin
         r=20,   # Optional: right margin
         b=20    # Optional: bottom margin
@@ -1359,6 +1217,163 @@ comm_pie = px.pie(
     textinfo='value+percent',
     #  texttemplate='<br>%{value}\n %{percent:.1%}',  # Format to show both value and percentage
     hovertemplate='<b>%{label}</b>: %{percent}<extra></extra>'  # Hover details
+)
+
+# ------------------------ Person Submitting Form DF ---------------------------- #
+
+person_unique = [
+    'Larry Wallace Jr.', 
+    'Cameron Morgan',
+    'Sonya Hosey', 
+    'Kiounis Williams', 
+    'Antonio Montgomery', 
+    'Toya Craney', 
+    'KAZI 88.7 FM Radio Interview & Preparation', 
+    'Kim Holiday', 
+    'Jordan Calbert', 
+    'Dominique Street', 
+    'Eric Roberts'
+]
+
+# print("Person Unique Before:", df["Person submitting this form:"].unique().tolist())
+
+# Create a new dataframe with 'Person' and 'Date of Activity'
+df_person = df[['Person', 'Date of Activity']].copy()
+
+# Remove trailing whitespaces and perform the replacements
+df['Person'] = (
+    df['Person']
+    .str.strip()
+    .replace({
+        "Larry Wallace Jr": "Larry Wallace Jr.",
+        "`Larry Wallace Jr": "Larry Wallace Jr.",
+        "Antonio Montggery": "Antonio Montgomery",
+        "KAZI 88.7 FM Radio Interview & Preparation": "Larry Wallace Jr.",
+    })
+)
+
+# Group the data by 'Month' and 'Person' and count occurrences
+df_person_counts = (
+    df.groupby(['Month', 'Person'], sort=True)
+    .size()
+    .reset_index(name='Count')
+)
+
+# Assign categorical ordering to the 'Month' column
+df_person_counts['Month'] = pd.Categorical(
+    df_person_counts['Month'],
+    categories=months_in_quarter,
+    ordered=True
+)
+
+# Sort df
+df_person_counts = df_person_counts.sort_values(by=['Month', 'Person'])
+
+# Create the grouped bar chart
+person_fig = px.bar(
+    df_person_counts,
+    x='Month',
+    y='Count',
+    color='Person',
+    barmode='group',
+    text='Count',
+    title=f'{current_quarter} Form Submissions by Month',
+    labels={
+        'Count': 'Number of Submissions',
+        'Month': 'Month',
+        'Person': 'Person'
+    }
+).update_layout(
+    title_x=0.5,
+    xaxis_title='Month',
+    yaxis_title='Count',
+    height=900,  # Adjust graph height
+    title=dict(
+        text= f'{current_quarter} Form Submissions by Month',
+        x=0.5, # Center title
+        font=dict(
+            size=35,
+            family='Calibri',
+            color='black',
+            )
+    ),
+    font=dict(
+        family='Calibri',
+        size=17,
+        color='black'
+    ),
+    xaxis=dict(
+        tickmode='array',
+        tickvals=df_person_counts['Month'].unique(),
+        tickangle=-35  # Rotate x-axis labels for better readability
+    ),
+    legend=dict(
+        title='',
+        orientation="v",  # Vertical legend
+        x=1.05,  # Position legend to the right
+        xanchor="left",  # Anchor legend to the left
+        y=1,  # Position legend at the top
+        yanchor="top"  # Anchor legend at the top
+    ),
+    hovermode='x unified',  # Display unified hover info
+    bargap=0.08,  # Reduce the space between bars
+    bargroupgap=0,  # Reduce space between individual bars in groups
+    margin = dict(t=80, b=100, l=0, r=0),
+).update_traces(
+    textposition='outside',  # Display text above bars
+    textfont=dict(size=30),  # Increase text size in each bar
+    hovertemplate=(
+        '<br>'
+        '<b>Count: </b>%{y}<br>'  # Count
+    ),
+    customdata=df_person_counts['Person'].values.tolist()
+).add_vline(
+    x=0.5,  # Adjust the position of the line
+    line_dash="dash",
+    line_color="gray",
+    line_width=2
+).add_vline(
+    x=1.5,  # Position of the second line
+    line_dash="dash",
+    line_color="gray",
+    line_width=2
+)
+
+# Group by person submitting form:
+df_pf = df.groupby('Person').size().reset_index(name='Count')
+
+# Pie chart:
+person_pie = px.pie(
+    df_pf,
+    names='Person',
+    values='Count',
+    color='Person',
+    height=850
+).update_layout(
+    title=dict(
+        x=0.5,
+        text=f'{current_quarter} Distribution of Form Submissions',  # Title text
+        font=dict(
+            size=35,  # Increase this value to make the title bigger
+            family='Calibri',  # Optional: specify font family
+            color='black'  # Optional: specify font color
+        ),
+    ),
+    legend=dict(
+        # title='',
+        title=None,
+        orientation="v",  # Vertical legend
+        x=1.05,  # Position legend to the right
+        xanchor="left",  # Anchor legend to the left
+        y=1,  # Position legend at the top
+        yanchor="top"  # Anchor legend at the top
+    ),
+    margin = dict(t=80, b=0, l=0, r=0),
+).update_traces(
+    rotation=70,  # Rotate pie chart 90 degrees counterclockwise
+    textfont=dict(size=19),  # Increase text size in each bar
+    texttemplate='%{value}<br>%{percent:.1%}',  # Format percentage as whole numbers
+    hovertemplate='<b>%{label}</b>: %{value}<extra></extra>'
 )
 
 # # ========================== DataFrame Table ========================== #
@@ -1385,8 +1400,8 @@ engagement_table = go.Figure(data=[go.Table(
 )])
 
 engagement_table.update_layout(
-    margin=dict(l=50, r=50, t=30, b=40),  # Remove margins
-    height=900,
+    margin=dict(l=50, r=50, t=30, b=60),  # Remove margins
+    height=800,
     # width=1500,  # Set a smaller width to make columns thinner
     paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
     plot_bgcolor='rgba(0,0,0,0)'  # Transparent plot area
@@ -1444,29 +1459,34 @@ app.layout = html.Div(
   ]),    
 
 # Data Table
-# html.Div(
-#     className='row0',
-#     children=[
-#         html.Div(
-#             className='table',
-#             children=[
-#                 html.H1(
-#                     className='table-title',
-#                     children='Partner Engagement Table'
-#                 )
-#             ]
-#         ),
-#         html.Div(
-#             className='table2', 
-#             children=[
-#                 dcc.Graph(
-#                     className='data',
-#                     figure=engagement_table
-#                 )
-#             ]
-#         )
-#     ]
-# ),
+html.Div(
+    className='row00',
+    children=[
+        html.Div(
+            className='graph00',
+            children=[
+                html.Div(
+                    className='table',
+                    children=[
+                        html.H1(
+                            className='table-title',
+                            children='Engagements Table'
+                        )
+                    ]
+                ),
+                html.Div(
+                    className='table2', 
+                    children=[
+                        dcc.Graph(
+                            className='data',
+                            figure=engagement_table
+                        )
+                    ]
+                )
+            ]
+        ),
+    ]
+),
 
 # ROW 1
 html.Div(
@@ -1525,7 +1545,7 @@ html.Div(
 
 # ROW 1
 html.Div(
-    className='row0',
+    className='row1',
     children=[
         html.Div(
             className='graph11',
@@ -1639,35 +1659,6 @@ html.Div(
             className='graph0',
             children=[
                 dcc.Graph(
-                    figure=person_fig
-                )
-            ]
-        )
-    ]
-),
-
-# ROW 
-html.Div(
-    className='row3',
-    children=[
-        html.Div(
-            className='graph0',
-            children=[
-                dcc.Graph(
-                    figure=person_pie
-                )
-            ]
-        )
-    ]
-),
-# ROW 
-html.Div(
-    className='row3',
-    children=[
-        html.Div(
-            className='graph0',
-            children=[
-                dcc.Graph(
                     figure=admin_fig
                 )
             ]
@@ -1749,32 +1740,33 @@ html.Div(
     ]
 ),
 
+# ROW 
 html.Div(
     className='row3',
     children=[
         html.Div(
             className='graph0',
             children=[
-                html.Div(
-                    className='table',
-                    children=[
-                        html.H1(
-                            className='table-title',
-                            children='Engagements Table'
-                        )
-                    ]
-                ),
-                html.Div(
-                    className='table2', 
-                    children=[
-                        dcc.Graph(
-                            className='data',
-                            figure=engagement_table
-                        )
-                    ]
+                dcc.Graph(
+                    figure=person_fig
                 )
             ]
-        ),
+        )
+    ]
+),
+
+# ROW 
+html.Div(
+    className='row3',
+    children=[
+        html.Div(
+            className='graph0',
+            children=[
+                dcc.Graph(
+                    figure=person_pie
+                )
+            ]
+        )
     ]
 ),
 ])
@@ -1787,7 +1779,7 @@ if __name__ == '__main__':
                 #    False)
 # =================================== Updated Database ================================= #
 
-# updated_path = 'data/bmhc_q4_2024_cleaned.xlsx'
+# updated_path = f'data/Engagement_{current_quarter}_{report_year}.xlsx'
 # data_path = os.path.join(script_dir, updated_path)
 # df.to_excel(data_path, index=False)
 # print(f"DataFrame saved to {data_path}")
