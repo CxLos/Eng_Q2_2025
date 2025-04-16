@@ -489,9 +489,21 @@ status_fig = px.pie(
     hovertemplate='<b>Status</b>: %{label}<br><b>Count</b>: %{value}<extra></extra>'
 )
 
-# --------------------- BMHC Administrative Activity DF ------------------------ # 
+# --------------------- Administrative Activity DF ------------------------ # 
 
-# print("Administrative Activity Unique Before:", df['Admin Activity'].unique().tolist())
+admin_value_counts = df['Admin Activity'].value_counts()
+
+# Convert the Series to a DataFrame
+admin_value_counts_df = admin_value_counts.reset_index()
+admin_value_counts_df.columns = ['Admin Activity', 'Count']  # Rename columns
+
+# Save the DataFrame to an Excel file
+output_path = os.path.join(script_dir, 'admin_activity_counts.xlsx')
+
+# admin_value_counts_df.to_excel(output_path, index=False)
+# print(f"Admin activity counts saved to {output_path}")
+
+# print("Administrative Activity Unique Before:", admin_value_counts)
 # print("Admin Activity value counts:", df['Admin Activity'].value_counts())
 
 admin_unique = [
@@ -771,8 +783,21 @@ admin_pie = px.pie(
 
 # --------------------- Care Network Activity DF ------------------------ #
 
+# Value counts for 'Care Activity'
+care_value_counts = df['Care Activity'].value_counts()
+
+# Convert the Series to a DataFrame
+care_value_counts_df = care_value_counts.reset_index() 
+care_value_counts_df.columns = ['Care Activity', 'Count']  # Rename columns
+
+# Save the DataFrame to an Excel file
+care_output_path = os.path.join(script_dir, 'care_activity_counts.xlsx')
+
+care_value_counts_df.to_excel(care_output_path, index=False)
+print(f"Care activity counts saved to {care_output_path}")
+
 # print(df['Care Network Activity'].unique().tolist())
-# print("Care Network Activity Value Counts:", df['Care Activity'].value_counts())
+# print("Care Network Activity Value Counts:", care_value_counts)
 
 custom_colors = {
     'January': 'Blues',
@@ -908,7 +933,7 @@ unmatched_care = df_care[~df_care['Care Activity'].isin(care_categories)]['Care 
 
 # Find any remaining unmatched purposes
 unmatched_care = df_care[~df_care['Care Activity'].isin(care_categories)]['Care Activity'].unique().tolist()
-print("Unmatched Care Network Activities:", unmatched_care)
+# print("Unmatched Care Network Activities:", unmatched_care)
 
 # Group the data by 'Month' and 'Admin Activity' and count occurrences
 df_care_counts = (
@@ -1020,8 +1045,21 @@ care_pie = px.pie(
 
 # --------------------- Community Outreach Activity DF ------------------------ #
 
+# Value counts for 'Outreach Activity'
+outreach_value_counts = df['Outreach Activity'].value_counts()
+
+# Convert the Series to a DataFrame
+outreach_value_counts_df = outreach_value_counts.reset_index()
+outreach_value_counts_df.columns = ['Outreach Activity', 'Count']  # Rename columns
+
+# Save the DataFrame to an Excel file
+outreach_output_path = os.path.join(script_dir, 'outreach_activity_counts.xlsx')
+
+outreach_value_counts_df.to_excel(outreach_output_path, index=False)
+print(f"Outreach activity counts saved to {outreach_output_path}")
+
 # print("Community Outreach Activities Unique Before:", df['Outreach Activity'].unique().tolist())
-# print("Community Outreach Activities Value Counts: \n", df['Outreach Activity'].value_counts())
+# print("Community Outreach Activities Value Counts: \n", outreach_value_counts)
 
 comm_unique = [
     '', 'Meeting', 'Advocacy', 'Healthy Cuts Event', 'Presentation', 'Onsite Outreach ', 'Movement is medicine', 'Weekly Meeting Updates', 'NA', 'NA - Team Meeting', 'Movement is Medicine', ' Movement is Medicine', 'Potential partnering for mammogram services on site.', 'Healthy Cuts/Know Your Numbers Event at Community First Village', 'CTAAF Conference Presentation (advocacy of BMHC + AMEN movement is medicine ) ', 'BMHC Weekly Team Huddle ', 'Outreach 1 to 1 Strategy Meetings', 'Community First Village Onsite Outreach', 'Movement Is Medicine', 'Downtown Austin Community Court Onsite Outreach', 'Tabling', 'BMHC + KAZI Basketball Tournament', 'Outreach & Navigation', 'Health Event', 'ECHO Pilot Program ', 'Advocacy, Tabling, Presentation', 'Coordination of services', 'Collaboration', 'PSH Caseworker calls and updates', 'PSH HMIS Updates', 'PSH File updates', 'Collaboration of development of co-programs (ministry and GUD LIFE)', 'Discovery Meeting: Learn about each organization’s mission, values, and potential alignment.', 'psh updates', 'build relationship ', 'Building Relationships ', 'meeting via phone'
@@ -1773,9 +1811,9 @@ html.Div(
 
 print(f"Serving Flask app '{current_file}'! 🚀")
 
-if __name__ == '__main__':
-    app.run_server(debug=
-                   True)
+# if __name__ == '__main__':
+#     app.run_server(debug=
+#                    True)
                 #    False)
 # =================================== Updated Database ================================= #
 
