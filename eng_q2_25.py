@@ -77,7 +77,6 @@ df_2 = df[df['Month'] == 'February']
 df_3 = df[df['Month'] == 'March']
 
 # print(df.head(10))
-# print('Total Marketing Events: ', len(df))
 # print('Column Names: \n', df.columns)
 # print('DF Shape:', df.shape)
 # print('Dtypes: \n', df.dtypes)
@@ -90,20 +89,9 @@ df_3 = df[df['Month'] == 'March']
 
 # ================================= Columns ================================= #
 
-# Column Names: 
-
-        # 'Timestamp', 
-        # 'Date of Activity', 
-        # 'Person submitting this form:',
-        # 'Activity Duration (minutes):',
-        # 'Care Network Activity:',
-        # 'Entity name:', 
-        # 'Brief Description:', 
-        # 'Activity Status:',
-        # 'BMHC Administrative Activity:', 
-        # 'Total travel time (minutes):',
-        # 'Community Outreach Activity:',
-        # 'Number engaged at Community Outreach Activity:'
+columns =[
+    'Timestamp', 'Date of Activity', 'Person submitting this form:', 'Activity Duration (minutes):', 'Care Network Activity:', 'Entity name:', 'Brief Description:', 'Activity Status:', 'BMHC Administrative Activity:', 'Total travel time (minutes):', 'Community Outreach Activity:', 'Number engaged at Community Outreach Activity:', 'Any recent or planned changes to BMHC lead services or programs?', 'Email Address', 'Month'
+]
 
 # =============================== Missing Values ============================ #
 
@@ -126,6 +114,7 @@ df.rename(
         "BMHC Administrative Activity:": "Admin Activity",
         "Care Network Activity:": "Care Activity",
         "Community Outreach Activity:": "Outreach Activity",
+        "Activity Status:": "Activity Status",
     }, 
 inplace=True)
 
@@ -467,11 +456,90 @@ travel_pie = px.pie(
 # --------------------------------- Activity Status DF -------------------------------- #
 
 # Group by 'Activity Status:' dataframe
-activity_status_group = df.groupby('Activity Status:').size().reset_index(name='Count')
+df_activity_status = df.groupby('Activity Status').size().reset_index(name='Count')
 
-status_fig = px.pie(
-    activity_status_group,
-    names='Activity Status:',
+# print("Activity Status Unique before: \n", df['Activity Status'].unique().tolist())
+
+mode = df['Activity Status'].mode()[0]
+df['Activity Status'] = df['Activity Status'].fillna(mode)
+
+df_activity_status['Activity Status'] = (
+    df_activity_status['Activity Status']
+    .str.strip()
+    .replace({
+        '': mode,
+    })
+)
+
+df_activity_status_counts = (
+    df.groupby(['Month', 'Activity Status'], sort=False)
+    .size()
+    .reset_index(name='Count')
+)
+
+df_activity_status_counts['Month'] = pd.Categorical(
+    df_activity_status_counts['Month'],
+    categories=months_in_quarter,
+    ordered=True
+)
+
+# print("Activity Status Unique after: \n", df['Activity Status'].unique().tolist())
+
+status_fig = px.bar(
+    df_activity_status_counts,
+    x='Month',
+    y='Count',
+    color='Activity Status',
+    barmode='group',
+    text='Count',
+    labels={
+        'Count': 'Number of Submissions',
+        'Month': 'Month',
+        'Activity Status': 'Activity Status'
+    }
+).update_layout(
+    title_x=0.5,
+    xaxis_title='Month',
+    yaxis_title='Count',
+    height=550,
+    font=dict(
+        family='Calibri',
+        size=17,
+        color='black'
+    ),
+    title=dict(
+        text= f'{current_quarter} Activity Status by Month',
+        x=0.5, 
+        font=dict(
+            size=22,
+            family='Calibri',
+            color='black',
+            )
+    ),
+    xaxis=dict(
+        tickmode='array',
+        tickvals=df_activity_status_counts['Month'].unique(),
+        tickangle=-35
+    ),
+    legend=dict(
+        title='',
+        orientation="v",
+        x=1.05,
+        xanchor="left",
+        y=1,
+        yanchor="top"
+    ),
+    hovermode='x unified'
+).update_traces(
+    textfont=dict(size=17),  # Increase text size in each bar
+    textposition='outside',
+    hovertemplate='<br><b>Count: </b>%{y}<br>',
+    customdata=df_activity_status_counts['Activity Status'].values.tolist()
+)
+
+status_pie = px.pie(
+    df_activity_status,
+    names='Activity Status',
     values='Count',
 ).update_layout(
     title= f'{current_quarter} Activity Status',
@@ -1497,34 +1565,34 @@ app.layout = html.Div(
   ]),    
 
 # Data Table
-html.Div(
-    className='row00',
-    children=[
-        html.Div(
-            className='graph00',
-            children=[
-                html.Div(
-                    className='table',
-                    children=[
-                        html.H1(
-                            className='table-title',
-                            children='Engagements Table'
-                        )
-                    ]
-                ),
-                html.Div(
-                    className='table2', 
-                    children=[
-                        dcc.Graph(
-                            className='data',
-                            figure=engagement_table
-                        )
-                    ]
-                )
-            ]
-        ),
-    ]
-),
+# html.Div(
+#     className='row00',
+#     children=[
+#         html.Div(
+#             className='graph00',
+#             children=[
+#                 html.Div(
+#                     className='table',
+#                     children=[
+#                         html.H1(
+#                             className='table-title',
+#                             children='Engagements Table'
+#                         )
+#                     ]
+#                 ),
+#                 html.Div(
+#                     className='table2', 
+#                     children=[
+#                         dcc.Graph(
+#                             className='data',
+#                             figure=engagement_table
+#                         )
+#                     ]
+#                 )
+#             ]
+#         ),
+#     ]
+# ),
 
 # ROW 1
 html.Div(
@@ -1613,7 +1681,7 @@ html.Div(
             className='graph2',
             children=[
                 dcc.Graph(
-                    figure=status_fig
+                    # figure=status_fig
                 )
             ]
         ),
@@ -1683,6 +1751,29 @@ html.Div(
             children=[
                 dcc.Graph(
                     figure=travel_pie
+                )
+            ]
+        ),
+    ]
+),
+
+# ROW 1
+html.Div(
+    className='row1',
+    children=[
+        html.Div(
+            className='graph1',
+            children=[
+                dcc.Graph(
+                    figure=status_fig
+                )
+            ]
+        ),
+        html.Div(
+            className='graph2',
+            children=[
+                dcc.Graph(
+                    figure=status_pie
                 )
             ]
         ),
